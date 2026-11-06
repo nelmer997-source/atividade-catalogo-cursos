@@ -1,2 +1,2 @@
-Nicolas Elmer de Oliveira Souza
+Nicolas Elmer de Oliveira Souza e
 Leonardo Bizzari Begido
