@@ -1,0 +1,705 @@
+﻿
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\CatalogocursosApplication.java ===
+package br.edu.catalogocursos;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CatalogocursosApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CatalogocursosApplication.class, args);
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\controller\CursoController.java ===
+package br.edu.catalogocursos.api.controller;
+
+import br.edu.catalogocursos.api.dto.CursoRequest;
+import br.edu.catalogocursos.api.dto.CursoResponse;
+import br.edu.catalogocursos.api.mapper.CursoMapper;
+import br.edu.catalogocursos.application.CursoService;
+import br.edu.catalogocursos.domain.Curso;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+
+@RestController
+@RequestMapping("/api/cursos")
+public class CursoController {
+
+    private final CursoService service;
+    private final CursoMapper mapper;
+
+    public CursoController(CursoService service, CursoMapper mapper) {
+        this.service = service;
+        this.mapper = mapper;
+    }
+
+    @PostMapping
+    public ResponseEntity<CursoResponse> cadastrar(@RequestBody @Valid CursoRequest request) {
+        Curso salvo = service.cadastrar(mapper.toEntity(request), request.instrutorId());
+        CursoResponse response = mapper.toResponse(salvo);
+
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(salvo.getId())
+                .toUri();
+
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CursoResponse> consultar(@PathVariable Long id) {
+        Curso curso = service.buscarPorId(id);
+        return ResponseEntity.ok(mapper.toResponse(curso));
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\controller\InstrutorController.java ===
+package br.edu.catalogocursos.api.controller;
+
+import br.edu.catalogocursos.api.dto.CursoResumoResponse;
+import br.edu.catalogocursos.api.dto.InstrutorRequest;
+import br.edu.catalogocursos.api.dto.InstrutorResponse;
+import br.edu.catalogocursos.api.mapper.CursoMapper;
+import br.edu.catalogocursos.api.mapper.InstrutorMapper;
+import br.edu.catalogocursos.application.InstrutorService;
+import br.edu.catalogocursos.domain.Instrutor;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/instrutores")
+public class InstrutorController {
+
+    private final InstrutorService service;
+    private final InstrutorMapper instrutorMapper;
+    private final CursoMapper cursoMapper;
+
+    public InstrutorController(
+            InstrutorService service,
+            InstrutorMapper instrutorMapper,
+            CursoMapper cursoMapper
+    ) {
+        this.service = service;
+        this.instrutorMapper = instrutorMapper;
+        this.cursoMapper = cursoMapper;
+    }
+
+    @PostMapping
+    public ResponseEntity<InstrutorResponse> cadastrar(@RequestBody @Valid InstrutorRequest request) {
+        Instrutor salvo = service.cadastrar(instrutorMapper.toEntity(request));
+        InstrutorResponse response = instrutorMapper.toResponse(salvo);
+
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(salvo.getId())
+                .toUri();
+
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @GetMapping("/{id}/cursos")
+    public ResponseEntity<List<CursoResumoResponse>> listarCursos(@PathVariable Long id) {
+        List<CursoResumoResponse> cursos = service.listarCursosDoInstrutor(id).stream()
+                .map(cursoMapper::toResumoResponse)
+                .toList();
+        return ResponseEntity.ok(cursos);
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\dto\CursoRequest.java ===
+package br.edu.catalogocursos.api.dto;
+
+import br.edu.catalogocursos.domain.NivelCurso;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record CursoRequest(
+        @NotBlank @Size(min = 3, max = 150) String titulo,
+        @NotNull @Min(1) @Max(400) Integer cargaHoraria,
+        @NotNull NivelCurso nivel,
+        @NotNull Long instrutorId
+) {
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\dto\CursoResponse.java ===
+package br.edu.catalogocursos.api.dto;
+
+import br.edu.catalogocursos.domain.NivelCurso;
+
+public record CursoResponse(
+        Long id,
+        String titulo,
+        Integer cargaHoraria,
+        NivelCurso nivel,
+        InstrutorResumoDTO instrutor
+) {
+    public record InstrutorResumoDTO(Long id, String nome) {
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\dto\CursoResumoResponse.java ===
+package br.edu.catalogocursos.api.dto;
+
+import br.edu.catalogocursos.domain.NivelCurso;
+
+public record CursoResumoResponse(
+        Long id,
+        String titulo,
+        Integer cargaHoraria,
+        NivelCurso nivel
+) {
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\dto\InstrutorRequest.java ===
+package br.edu.catalogocursos.api.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record InstrutorRequest(
+        @NotBlank @Size(min = 3, max = 120) String nome,
+        @NotBlank @Email @Size(max = 160) String email
+) {
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\dto\InstrutorResponse.java ===
+package br.edu.catalogocursos.api.dto;
+
+public record InstrutorResponse(
+        Long id,
+        String nome,
+        String email
+) {
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\exception\GlobalExceptionHandler.java ===
+package br.edu.catalogocursos.api.exception;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "status", 400,
+                        "message", "Dados inv\u00e1lidos",
+                        "path", request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleUnreadableMessage(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "status", 400,
+                        "message", "Requisi\u00e7\u00e3o inv\u00e1lida",
+                        "path", request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<?> handleNotFoundException(
+            EntityNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "status", 404,
+                        "message", ex.getMessage(),
+                        "path", request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleConflictException(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "status", 409,
+                        "message", ex.getMessage(),
+                        "path", request.getRequestURI()
+                ));
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\mapper\CursoMapper.java ===
+package br.edu.catalogocursos.api.mapper;
+
+import br.edu.catalogocursos.api.dto.CursoRequest;
+import br.edu.catalogocursos.api.dto.CursoResponse;
+import br.edu.catalogocursos.api.dto.CursoResumoResponse;
+import br.edu.catalogocursos.domain.Curso;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CursoMapper {
+
+    public Curso toEntity(CursoRequest request) {
+        Curso curso = new Curso();
+        curso.setTitulo(request.titulo());
+        curso.setCargaHoraria(request.cargaHoraria());
+        curso.setNivel(request.nivel());
+        return curso;
+    }
+
+    public CursoResponse toResponse(Curso curso) {
+        return new CursoResponse(
+                curso.getId(),
+                curso.getTitulo(),
+                curso.getCargaHoraria(),
+                curso.getNivel(),
+                new CursoResponse.InstrutorResumoDTO(
+                        curso.getInstrutor().getId(),
+                        curso.getInstrutor().getNome()
+                )
+        );
+    }
+
+    public CursoResumoResponse toResumoResponse(Curso curso) {
+        return new CursoResumoResponse(
+                curso.getId(),
+                curso.getTitulo(),
+                curso.getCargaHoraria(),
+                curso.getNivel()
+        );
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\api\mapper\InstrutorMapper.java ===
+package br.edu.catalogocursos.api.mapper;
+
+import br.edu.catalogocursos.api.dto.InstrutorRequest;
+import br.edu.catalogocursos.api.dto.InstrutorResponse;
+import br.edu.catalogocursos.domain.Instrutor;
+import org.springframework.stereotype.Component;
+
+@Component
+public class InstrutorMapper {
+
+    public Instrutor toEntity(InstrutorRequest request) {
+        Instrutor instrutor = new Instrutor();
+        instrutor.setNome(request.nome());
+        instrutor.setEmail(request.email());
+        return instrutor;
+    }
+
+    public InstrutorResponse toResponse(Instrutor instrutor) {
+        return new InstrutorResponse(
+                instrutor.getId(),
+                instrutor.getNome(),
+                instrutor.getEmail()
+        );
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\application\CursoService.java ===
+package br.edu.catalogocursos.application;
+
+import br.edu.catalogocursos.domain.Curso;
+import br.edu.catalogocursos.domain.Instrutor;
+import br.edu.catalogocursos.repository.CursoRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class CursoService {
+
+    private final CursoRepository cursoRepository;
+    private final InstrutorService instrutorService;
+
+    public CursoService(CursoRepository cursoRepository, InstrutorService instrutorService) {
+        this.cursoRepository = cursoRepository;
+        this.instrutorService = instrutorService;
+    }
+
+    @Transactional
+    public Curso cadastrar(Curso curso, Long instrutorId) {
+        Instrutor instrutor = instrutorService.buscarPorId(instrutorId);
+        instrutor.adicionarCurso(curso);
+        return cursoRepository.save(curso);
+    }
+
+    @Transactional(readOnly = true)
+    public Curso buscarPorId(Long id) {
+        return cursoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Curso n\u00e3o encontrado"));
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\application\InstrutorService.java ===
+package br.edu.catalogocursos.application;
+
+import br.edu.catalogocursos.domain.Curso;
+import br.edu.catalogocursos.domain.Instrutor;
+import br.edu.catalogocursos.repository.CursoRepository;
+import br.edu.catalogocursos.repository.InstrutorRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+public class InstrutorService {
+
+    private final InstrutorRepository repository;
+    private final CursoRepository cursoRepository;
+
+    public InstrutorService(InstrutorRepository repository, CursoRepository cursoRepository) {
+        this.repository = repository;
+        this.cursoRepository = cursoRepository;
+    }
+
+    @Transactional
+    public Instrutor cadastrar(Instrutor instrutor) {
+        if (repository.existsByEmail(instrutor.getEmail())) {
+            throw new IllegalArgumentException("Email j\u00e1 utilizado");
+        }
+        return repository.save(instrutor);
+    }
+
+    @Transactional(readOnly = true)
+    public Instrutor buscarPorId(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Instrutor n\u00e3o encontrado"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Curso> listarCursosDoInstrutor(Long instrutorId) {
+        if (!repository.existsById(instrutorId)) {
+            throw new EntityNotFoundException("Instrutor n\u00e3o encontrado");
+        }
+        return cursoRepository.findByInstrutorIdOrderByTituloAsc(instrutorId);
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\domain\Curso.java ===
+package br.edu.catalogocursos.domain;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "curso")
+public class Curso {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 150)
+    private String titulo;
+
+    @Column(name = "carga_horaria", nullable = false)
+    private Integer cargaHoraria;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private NivelCurso nivel;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "instrutor_id", nullable = false)
+    private Instrutor instrutor;
+
+    public Curso() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public Integer getCargaHoraria() {
+        return cargaHoraria;
+    }
+
+    public void setCargaHoraria(Integer cargaHoraria) {
+        this.cargaHoraria = cargaHoraria;
+    }
+
+    public NivelCurso getNivel() {
+        return nivel;
+    }
+
+    public void setNivel(NivelCurso nivel) {
+        this.nivel = nivel;
+    }
+
+    public Instrutor getInstrutor() {
+        return instrutor;
+    }
+
+    public void setInstrutor(Instrutor instrutor) {
+        this.instrutor = instrutor;
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\domain\Instrutor.java ===
+package br.edu.catalogocursos.domain;
+
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "instrutor")
+public class Instrutor {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 120)
+    private String nome;
+
+    @Column(nullable = false, length = 160, unique = true)
+    private String email;
+
+    @OneToMany(mappedBy = "instrutor", fetch = FetchType.LAZY)
+    private List<Curso> cursos = new ArrayList<>();
+
+    public Instrutor() {
+    }
+
+    public void adicionarCurso(Curso curso) {
+        if (curso == null) {
+            throw new IllegalArgumentException("O curso n\u00e3o pode ser nulo");
+        }
+        if (!this.cursos.contains(curso)) {
+            curso.setInstrutor(this);
+            this.cursos.add(curso);
+        }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public List<Curso> getCursos() {
+        return cursos;
+    }
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\domain\NivelCurso.java ===
+package br.edu.catalogocursos.domain;
+
+public enum NivelCurso {
+    INICIANTE,
+    INTERMEDIARIO,
+    AVANCADO
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\repository\CursoRepository.java ===
+package br.edu.catalogocursos.repository;
+
+import br.edu.catalogocursos.domain.Curso;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CursoRepository extends JpaRepository<Curso, Long> {
+
+    List<Curso> findByInstrutorIdOrderByTituloAsc(Long instrutorId);
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\main\java\br\edu\catalogocursos\repository\InstrutorRepository.java ===
+package br.edu.catalogocursos.repository;
+
+import br.edu.catalogocursos.domain.Instrutor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface InstrutorRepository extends JpaRepository<Instrutor, Long> {
+
+    boolean existsByEmail(String email);
+}
+
+// === ARQUIVO: C:\Users\Nícolas\Documents\Codex\2026-09-09\files-pasted-by-the-user-chat\outputs\biblioteca2026\catalogocursos\src\test\java\br\edu\catalogocursos\CatalogocursosApplicationTests.java ===
+package br.edu.catalogocursos;
+
+import br.edu.catalogocursos.application.CursoService;
+import br.edu.catalogocursos.application.InstrutorService;
+import br.edu.catalogocursos.domain.Curso;
+import br.edu.catalogocursos.domain.Instrutor;
+import br.edu.catalogocursos.domain.NivelCurso;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class CatalogocursosApplicationTests {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private CursoService cursoService;
+
+    @Autowired
+    private InstrutorService instrutorService;
+
+    @Test
+    void deveAssociarCursoEmanterConsistencia() {
+        Instrutor instrutor = new Instrutor();
+        instrutor.setNome("Jo\u00e3o");
+        instrutor.setEmail("joao@teste.com");
+
+        Curso curso = new Curso();
+        curso.setTitulo("Java");
+
+        instrutor.adicionarCurso(curso);
+
+        assertTrue(instrutor.getCursos().contains(curso));
+        assertEquals(instrutor, curso.getInstrutor());
+    }
+
+    @Test
+    void deveRejeitarCursoComInstrutorInexistente() {
+        Curso curso = new Curso();
+        curso.setTitulo("Spring");
+        curso.setCargaHoraria(40);
+        curso.setNivel(NivelCurso.INICIANTE);
+
+        assertThrows(EntityNotFoundException.class, () -> cursoService.cadastrar(curso, 999L));
+    }
+
+    @Test
+    void deveRetornar400ParaInstrutorInvalido() throws Exception {
+        String jsonInvalido = "{\"nome\": \"\", \"email\": \"emailinvalido\"}";
+
+        mockMvc.perform(post("/api/instrutores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonInvalido))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.path").value("/api/instrutores"));
+    }
+
+    @Test
+    void deveRetornar409ParaEmailDuplicado() throws Exception {
+        Instrutor instrutor = new Instrutor();
+        instrutor.setNome("Carlos Silva");
+        instrutor.setEmail("carlos@teste.com");
+        instrutorService.cadastrar(instrutor);
+
+        String jsonDuplicado = "{\"nome\": \"Outro Carlos\", \"email\": \"carlos@teste.com\"}";
+
+        mockMvc.perform(post("/api/instrutores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonDuplicado))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.path").value("/api/instrutores"));
+    }
+
+    @Test
+    void deveListarCursosOrdenados() throws Exception {
+        Instrutor instrutor = new Instrutor();
+        instrutor.setNome("Maria");
+        instrutor.setEmail("maria@teste.com");
+        instrutor = instrutorService.cadastrar(instrutor);
+
+        Curso c1 = new Curso();
+        c1.setTitulo("Zookeeper");
+        c1.setCargaHoraria(10);
+        c1.setNivel(NivelCurso.AVANCADO);
+
+        Curso c2 = new Curso();
+        c2.setTitulo("Angular");
+        c2.setCargaHoraria(20);
+        c2.setNivel(NivelCurso.INICIANTE);
+
+        cursoService.cadastrar(c1, instrutor.getId());
+        cursoService.cadastrar(c2, instrutor.getId());
+
+        mockMvc.perform(get("/api/instrutores/" + instrutor.getId() + "/cursos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].titulo").value("Angular"))
+                .andExpect(jsonPath("$[1].titulo").value("Zookeeper"));
+    }
+}

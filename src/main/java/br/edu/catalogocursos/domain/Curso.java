@@ -20,25 +20,50 @@ public class Curso {
     @Column(nullable = false, length = 20)
     private NivelCurso nivel;
 
-    // Relacionamento Muitos-para-Um: Lado proprietário
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "instrutor_id", nullable = false)
     private Instrutor instrutor;
 
-    public Curso() {}
+    public Curso() {
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Integer getCargaHoraria() { return cargaHoraria; }
-    public void setCargaHoraria(Integer cargaHoraria) { this.cargaHoraria = cargaHoraria; }
+    public String getTitulo() {
+        return titulo;
+    }
 
-    public NivelCurso getNivel() { return nivel; }
-    public void setNivel(NivelCurso nivel) { this.nivel = nivel; }
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
 
-    public Instrutor getInstrutor() { return instrutor; }
-    public void setInstrutor(Instrutor instrutor) { this.instrutor = instrutor; }
+    public Integer getCargaHoraria() {
+        return cargaHoraria;
+    }
+
+    public void setCargaHoraria(Integer cargaHoraria) {
+        this.cargaHoraria = cargaHoraria;
+    }
+
+    public NivelCurso getNivel() {
+        return nivel;
+    }
+
+    public void setNivel(NivelCurso nivel) {
+        this.nivel = nivel;
+    }
+
+    public Instrutor getInstrutor() {
+        return instrutor;
+    }
+
+    public void setInstrutor(Instrutor instrutor) {
+        this.instrutor = instrutor;
+    }
 }

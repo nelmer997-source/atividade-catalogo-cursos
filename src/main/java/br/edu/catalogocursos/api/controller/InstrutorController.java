@@ -1,8 +1,10 @@
 package br.edu.catalogocursos.api.controller;
 
-import br.edu.catalogocursos.api.dto.CursoResponse;
+import br.edu.catalogocursos.api.dto.CursoResumoResponse;
 import br.edu.catalogocursos.api.dto.InstrutorRequest;
 import br.edu.catalogocursos.api.dto.InstrutorResponse;
+import br.edu.catalogocursos.api.mapper.CursoMapper;
+import br.edu.catalogocursos.api.mapper.InstrutorMapper;
 import br.edu.catalogocursos.application.InstrutorService;
 import br.edu.catalogocursos.domain.Instrutor;
 import jakarta.validation.Valid;
@@ -18,33 +20,37 @@ import java.util.List;
 public class InstrutorController {
 
     private final InstrutorService service;
+    private final InstrutorMapper instrutorMapper;
+    private final CursoMapper cursoMapper;
 
-    public InstrutorController(InstrutorService service) {
+    public InstrutorController(
+            InstrutorService service,
+            InstrutorMapper instrutorMapper,
+            CursoMapper cursoMapper
+    ) {
         this.service = service;
+        this.instrutorMapper = instrutorMapper;
+        this.cursoMapper = cursoMapper;
     }
 
     @PostMapping
     public ResponseEntity<InstrutorResponse> cadastrar(@RequestBody @Valid InstrutorRequest request) {
-        Instrutor instrutor = new Instrutor();
-        instrutor.setNome(request.nome());
-        instrutor.setEmail(request.email());
+        Instrutor salvo = service.cadastrar(instrutorMapper.toEntity(request));
+        InstrutorResponse response = instrutorMapper.toResponse(salvo);
 
-        Instrutor salvo = service.cadastrar(instrutor);
-        InstrutorResponse response = new InstrutorResponse(salvo.getId(), salvo.getNome(), salvo.getEmail());
-
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
-                .buildAndExpand(salvo.getId()).toUri();
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(salvo.getId())
+                .toUri();
 
         return ResponseEntity.created(uri).body(response);
     }
 
     @GetMapping("/{id}/cursos")
-    public ResponseEntity<List<CursoResponse>> listarCursos(@PathVariable Long id) {
-        List<CursoResponse> cursos = service.listarCursosDoInstrutor(id).stream()
-                .map(c -> new CursoResponse(
-                        c.getId(), c.getTitulo(), c.getCargaHoraria(), c.getNivel(),
-                        new CursoResponse.InstrutorResumoDTO(c.getInstrutor().getId(), c.getInstrutor().getNome())
-                )).toList();
+    public ResponseEntity<List<CursoResumoResponse>> listarCursos(@PathVariable Long id) {
+        List<CursoResumoResponse> cursos = service.listarCursosDoInstrutor(id).stream()
+                .map(cursoMapper::toResumoResponse)
+                .toList();
         return ResponseEntity.ok(cursos);
     }
 }

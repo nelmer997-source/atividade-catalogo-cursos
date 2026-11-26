@@ -20,18 +20,14 @@ public class CursoService {
 
     @Transactional
     public Curso cadastrar(Curso curso, Long instrutorId) {
-        // Busca o instrutor existente (se não existir, lança erro 404)
         Instrutor instrutor = instrutorService.buscarPorId(instrutorId);
-
-        // Mantém a consistência nos dois lados da relação em memória
         instrutor.adicionarCurso(curso);
-
         return cursoRepository.save(curso);
     }
 
     @Transactional(readOnly = true)
     public Curso buscarPorId(Long id) {
         return cursoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Curso não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Curso n\u00e3o encontrado"));
     }
 }

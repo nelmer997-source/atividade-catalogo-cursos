@@ -1,10 +1,10 @@
 package br.edu.catalogocursos;
 
+import br.edu.catalogocursos.application.CursoService;
+import br.edu.catalogocursos.application.InstrutorService;
 import br.edu.catalogocursos.domain.Curso;
 import br.edu.catalogocursos.domain.Instrutor;
 import br.edu.catalogocursos.domain.NivelCurso;
-import br.edu.catalogocursos.application.CursoService;
-import br.edu.catalogocursos.application.InstrutorService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +14,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -32,11 +36,10 @@ class CatalogocursosApplicationTests {
     @Autowired
     private InstrutorService instrutorService;
 
-    // 1. Instrutor associa um curso e mantém os dois lados consistentes[cite: 9]
     @Test
     void deveAssociarCursoEmanterConsistencia() {
         Instrutor instrutor = new Instrutor();
-        instrutor.setNome("João");
+        instrutor.setNome("Jo\u00e3o");
         instrutor.setEmail("joao@teste.com");
 
         Curso curso = new Curso();
@@ -48,7 +51,6 @@ class CatalogocursosApplicationTests {
         assertEquals(instrutor, curso.getInstrutor());
     }
 
-    // 2. Cadastro de curso com instrutor inexistente é rejeitado[cite: 9]
     @Test
     void deveRejeitarCursoComInstrutorInexistente() {
         Curso curso = new Curso();
@@ -56,12 +58,9 @@ class CatalogocursosApplicationTests {
         curso.setCargaHoraria(40);
         curso.setNivel(NivelCurso.INICIANTE);
 
-        assertThrows(EntityNotFoundException.class, () -> {
-            cursoService.cadastrar(curso, 999L);
-        });
+        assertThrows(EntityNotFoundException.class, () -> cursoService.cadastrar(curso, 999L));
     }
 
-    // 3. Cadastro HTTP de instrutor inválido retorna 400[cite: 9]
     @Test
     void deveRetornar400ParaInstrutorInvalido() throws Exception {
         String jsonInvalido = "{\"nome\": \"\", \"email\": \"emailinvalido\"}";
@@ -69,10 +68,28 @@ class CatalogocursosApplicationTests {
         mockMvc.perform(post("/api/instrutores")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonInvalido))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.path").value("/api/instrutores"));
     }
 
-    // 4. Listagem por instrutor retorna somente seus cursos, ordenados por título[cite: 9]
+    @Test
+    void deveRetornar409ParaEmailDuplicado() throws Exception {
+        Instrutor instrutor = new Instrutor();
+        instrutor.setNome("Carlos Silva");
+        instrutor.setEmail("carlos@teste.com");
+        instrutorService.cadastrar(instrutor);
+
+        String jsonDuplicado = "{\"nome\": \"Outro Carlos\", \"email\": \"carlos@teste.com\"}";
+
+        mockMvc.perform(post("/api/instrutores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonDuplicado))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.path").value("/api/instrutores"));
+    }
+
     @Test
     void deveListarCursosOrdenados() throws Exception {
         Instrutor instrutor = new Instrutor();
@@ -80,8 +97,15 @@ class CatalogocursosApplicationTests {
         instrutor.setEmail("maria@teste.com");
         instrutor = instrutorService.cadastrar(instrutor);
 
-        Curso c1 = new Curso(); c1.setTitulo("Zookeeper"); c1.setCargaHoraria(10); c1.setNivel(NivelCurso.AVANCADO);
-        Curso c2 = new Curso(); c2.setTitulo("Angular"); c2.setCargaHoraria(20); c2.setNivel(NivelCurso.INICIANTE);
+        Curso c1 = new Curso();
+        c1.setTitulo("Zookeeper");
+        c1.setCargaHoraria(10);
+        c1.setNivel(NivelCurso.AVANCADO);
+
+        Curso c2 = new Curso();
+        c2.setTitulo("Angular");
+        c2.setCargaHoraria(20);
+        c2.setNivel(NivelCurso.INICIANTE);
 
         cursoService.cadastrar(c1, instrutor.getId());
         cursoService.cadastrar(c2, instrutor.getId());

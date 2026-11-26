@@ -7,6 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InstrutorRepository extends JpaRepository<Instrutor, Long> {
 
-    // Consulta para verificar email duplicado de instrutor
     boolean existsByEmail(String email);
 }

@@ -9,6 +9,6 @@ public record CursoResponse(
         NivelCurso nivel,
         InstrutorResumoDTO instrutor
 ) {
-    // DTO interno para o resumo do instrutor
-    public record InstrutorResumoDTO(Long id, String nome) {}
+    public record InstrutorResumoDTO(Long id, String nome) {
+    }
 }

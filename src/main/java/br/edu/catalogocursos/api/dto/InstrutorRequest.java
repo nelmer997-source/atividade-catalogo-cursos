@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record InstrutorRequest(
         @NotBlank @Size(min = 3, max = 120) String nome,
-        @NotBlank @Email String email
+        @NotBlank @Email @Size(max = 160) String email
 ) {
 }

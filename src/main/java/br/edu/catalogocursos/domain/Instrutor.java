@@ -18,16 +18,15 @@ public class Instrutor {
     @Column(nullable = false, length = 160, unique = true)
     private String email;
 
-    // Relacionamento Um-para-Muitos: Mapeado pelo atributo "instrutor" na classe Curso
     @OneToMany(mappedBy = "instrutor", fetch = FetchType.LAZY)
     private List<Curso> cursos = new ArrayList<>();
 
-    public Instrutor() {}
+    public Instrutor() {
+    }
 
-    // Método obrigatório pela atividade para manter a consistência bidirecional
     public void adicionarCurso(Curso curso) {
         if (curso == null) {
-            throw new IllegalArgumentException("O curso não pode ser nulo");
+            throw new IllegalArgumentException("O curso n\u00e3o pode ser nulo");
         }
         if (!this.cursos.contains(curso)) {
             curso.setInstrutor(this);
@@ -35,14 +34,31 @@ public class Instrutor {
         }
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getNome() {
+        return nome;
+    }
 
-    public List<Curso> getCursos() { return cursos; }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public List<Curso> getCursos() {
+        return cursos;
+    }
 }

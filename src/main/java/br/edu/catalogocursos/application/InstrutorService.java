@@ -24,7 +24,7 @@ public class InstrutorService {
     @Transactional
     public Instrutor cadastrar(Instrutor instrutor) {
         if (repository.existsByEmail(instrutor.getEmail())) {
-            throw new IllegalArgumentException("Email já utilizado"); // Será mapeado para erro 409 depois
+            throw new IllegalArgumentException("Email j\u00e1 utilizado");
         }
         return repository.save(instrutor);
     }
@@ -32,13 +32,13 @@ public class InstrutorService {
     @Transactional(readOnly = true)
     public Instrutor buscarPorId(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Instrutor não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Instrutor n\u00e3o encontrado"));
     }
 
     @Transactional(readOnly = true)
     public List<Curso> listarCursosDoInstrutor(Long instrutorId) {
         if (!repository.existsById(instrutorId)) {
-            throw new EntityNotFoundException("Instrutor não encontrado");
+            throw new EntityNotFoundException("Instrutor n\u00e3o encontrado");
         }
         return cursoRepository.findByInstrutorIdOrderByTituloAsc(instrutorId);
     }
